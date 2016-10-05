@@ -31,7 +31,7 @@ namespace SQLManager
             }
         }
 
-        public static int ExecuteNonQuery(string query, Dictionary<string, string> values = null)
+        public static int ExecuteNonQuery(string query)
         {
             ValidateConnectionString();
 
@@ -44,19 +44,7 @@ namespace SQLManager
                 var transaction = conn.BeginTransaction();
                 SQLiteCommand cmd = new SQLiteCommand(query, conn);
 
-                if (values != null)
-                {
-                    foreach (var key in values.Keys)
-                    {
-                        cmd.Parameters.Add(new SQLiteParameter(key, values[key]));
-                    }
-                }
-
-                foreach (SQLiteParameter param in cmd.Parameters)
-                {
-                    if (param.Value == null)
-                        param.Value = DBNull.Value;
-                }
+                cmd.Parameters.AddRange(Parameters.ToArray());
 
                 n = cmd.ExecuteNonQuery();
                 transaction.Commit();
@@ -65,7 +53,7 @@ namespace SQLManager
             return n;
         }
 
-        public static DataTable ExecuteReader(QueryBuilder query, Dictionary<string, string> values = null)
+        public static DataTable ExecuteReader(QueryBuilder query)
         {
             ValidateConnectionString();
 
@@ -78,14 +66,8 @@ namespace SQLManager
                 conn.Open();
                 SQLiteCommand cmd = new SQLiteCommand(_query, conn);
 
-                if (values != null)
-                {
-                    foreach (var key in values.Keys)
-                    {
-                        cmd.Parameters.Add(new SQLiteParameter(key, values[key]));
-                    }
-                }
-                
+                cmd.Parameters.AddRange(Parameters.ToArray());
+
                 dt.Load(cmd.ExecuteReader());
             }
 

@@ -46,7 +46,7 @@ namespace SQLManager
             }
         }
 
-        public static int ExecuteNonQuery(string query, Dictionary<string, string> values = null)
+        public static int ExecuteNonQuery(string query)
         {
             ValidateConnectionString();
 
@@ -59,19 +59,7 @@ namespace SQLManager
                 var transaction = conn.BeginTransaction();
                 MySqlCommand cmd = new MySqlCommand(query, conn);
 
-                if (values != null)
-                {
-                    foreach (var key in values.Keys)
-                    {
-                        cmd.Parameters.Add(new MySqlParameter(key, values[key]));
-                    }
-                }
-
-                foreach (MySqlParameter param in cmd.Parameters)
-                {
-                    if (param.Value == null)
-                        param.Value = DBNull.Value;
-                }
+                cmd.Parameters.AddRange(Parameters.ToArray());
 
                 n = cmd.ExecuteNonQuery();
                 transaction.Commit();
@@ -93,13 +81,7 @@ namespace SQLManager
                 conn.Open();
                 MySqlCommand cmd = new MySqlCommand(_query, conn);
 
-                if (values != null)
-                {
-                    foreach (var key in values.Keys)
-                    {
-                        cmd.Parameters.Add(new MySqlParameter(key, values[key]));
-                    }
-                }
+                cmd.Parameters.AddRange(Parameters.ToArray());
 
                 dt.Load(cmd.ExecuteReader());
             }
