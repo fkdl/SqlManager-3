@@ -6,6 +6,7 @@ using System.Threading.Tasks;
 using MySql.Data.MySqlClient;
 using System.Data;
 using System.Diagnostics;
+using System.Data.SqlClient;
 
 namespace SQLManager
 {
@@ -29,6 +30,18 @@ namespace SQLManager
             {
                 throw new Exception($"Invalid Connection string: {ConnectionString}");
             }
+        }
+
+        private static List<MySqlParameter> ConvertParameters(List<SqlParameter> pms)
+        {
+            List<MySqlParameter> newPms = new List<MySqlParameter>();
+
+            foreach (var p in pms)
+            {
+                newPms.Add(new MySqlParameter(p.ParameterName, p.Value));
+            }
+
+            return newPms;
         }
 
         public static void CreateDatabase(string dbQuery)
@@ -59,7 +72,7 @@ namespace SQLManager
                 var transaction = conn.BeginTransaction();
                 MySqlCommand cmd = new MySqlCommand(query, conn);
 
-                cmd.Parameters.AddRange(Parameters.ToArray());
+                cmd.Parameters.AddRange(ConvertParameters(Parameters).ToArray());
 
                 n = cmd.ExecuteNonQuery();
                 transaction.Commit();
