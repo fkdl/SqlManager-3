@@ -105,7 +105,7 @@ namespace SQLManager
             return returnCode;
         }
 
-        public static int ExecuteNonQuery(string query, List<SQLiteParameter> values)
+        private static int ExecuteNonQuery(string query, List<SQLiteParameter> values)
         {
             ValidateConnectionString();
 
@@ -127,7 +127,7 @@ namespace SQLManager
             return n;
         }
 
-        public static DataTable ExecuteReader(QueryBuilder query)
+        private static DataTable ExecuteReader(QueryBuilder query)
         {
             ValidateConnectionString();
 
