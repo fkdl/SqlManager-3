@@ -16,6 +16,7 @@ namespace SQLManager
         List<string> tables = new List<string>();
         List<string> joins = new List<string>();
         List<string> where = new List<string>();
+        List<string> groupBy = new List<string>();
         List<string> orderBy = new List<string>();
         List<QueryBuilder> union = new List<QueryBuilder>();
         int limit = -1;
@@ -68,8 +69,21 @@ namespace SQLManager
                     query.Append($"LIMIT {limit}");
                 }
 
+                //GROUP BY
+                if (groupBy.Count > 0)
+                {
+                    query.Append("GROUP BY ");
+                    for (int i = 0; i < groupBy.Count; i++)
+                    {
+                        if (i < orderBy.Count - 1)
+                            query.Append($"{groupBy[i]},");
+                        else
+                            query.Append($"{groupBy[i]} ");
+                    }
+                }
+
                 //ORDER BY
-                if(orderBy.Count > 0)
+                if (orderBy.Count > 0)
                 {
                     query.Append("ORDER BY ");
                     for (int i = 0; i < orderBy.Count; i++)
@@ -110,6 +124,12 @@ namespace SQLManager
         public QueryBuilder Where(params string[] _where)
         {
             where.AddRange(_where);
+            return this;
+        }
+
+        public QueryBuilder GroupBy(string group)
+        {
+            groupBy.Add(group);
             return this;
         }
 
