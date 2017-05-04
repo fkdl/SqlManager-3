@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.Data;
 using System.Data.SQLite;
@@ -47,7 +47,7 @@ namespace SQLManager
             var dt = new DataTable();
             string columnsFormatted = "*";
 
-            if(columns.Length > 0)
+            if (columns.Length > 0)
             {
                 columnsFormatted = string.Join(",", columns);
             }
@@ -55,13 +55,29 @@ namespace SQLManager
             var query = new QueryBuilder()
                 .Select(columnsFormatted)
                 .From(table);
-            
+
             dt = ExecuteReader(query);
 
             return dt;
         }
+    
+        public static DataTable Select(string[] tablesList, string[] columnsList, Dictionary<string, object> data)
+        {
+            DataTable dt = null;
+            string tables = string.Join(",", tablesList);
+            string columns = string.Join(",", columnsList);
 
-        public static bool Insert(string table, Dictionary<string, string> data)
+            QueryBuilder query = new QueryBuilder()
+                    .Select(columns)
+                    .From(tables)
+                    .Where(GenerateWhereStatements(data));
+
+            dt = ExecuteReader(query, GenerateSQLiteParameters(data));
+
+            return dt;
+        }
+
+        public static bool Insert(string table, Dictionary<string, object> data)
         {
             bool returnCode = true;
             var parameters = GenerateSQLiteParameters(data);
@@ -80,13 +96,13 @@ namespace SQLManager
             return returnCode;
         }
 
-        public static bool Update(string table, Dictionary<string, string> data, string where)
+        public static bool Update(string table, Dictionary<string, object> data, string where)
         {
             bool returnCode = true;
             var parameters = GenerateSQLiteParameters(data);
             string updateColumns = string.Empty;
 
-            foreach (KeyValuePair<string, string> val in data)
+            foreach (KeyValuePair<string, object> val in data)
             {
                 updateColumns += $"{val.Key} = @{val.Key},";
             }
@@ -127,20 +143,22 @@ namespace SQLManager
             return n;
         }
 
-        private static DataTable ExecuteReader(QueryBuilder query)
+        private static DataTable ExecuteReader(QueryBuilder query, List<SQLiteParameter> values = null)
         {
             ValidateConnectionString();
 
             DataTable dt = new DataTable();
             string _query = query.ToString();
-            Debug.WriteLine(_query);
+
+            DisplayQueryOnConsole(query.ToString());
 
             using (SQLiteConnection conn = new SQLiteConnection(ConnectionString))
             {
                 conn.Open();
                 SQLiteCommand cmd = new SQLiteCommand(_query, conn);
 
-                cmd.Parameters.AddRange(Parameters.ToArray());
+                if(values != null)
+                    cmd.Parameters.AddRange(values.ToArray());
 
                 dt.Load(cmd.ExecuteReader());
             }
@@ -148,11 +166,11 @@ namespace SQLManager
             return dt;
         }
 
-        private static List<SQLiteParameter> GenerateSQLiteParameters(Dictionary<string, string> data)
+        private static List<SQLiteParameter> GenerateSQLiteParameters(Dictionary<string, object> data)
         {
             List<SQLiteParameter> parameters = new List<SQLiteParameter>();
 
-            foreach (KeyValuePair<string, string> val in data)
+            foreach (KeyValuePair<string, object> val in data)
             {
                 parameters.Add(new SQLiteParameter()
                 {
@@ -164,11 +182,11 @@ namespace SQLManager
             return parameters;
         }
 
-        private static string GetColumns(Dictionary<string, string> _data)
+        private static string GetColumns(Dictionary<string, object> _data)
         {
             string _columns = string.Empty;
 
-            foreach (KeyValuePair<string, string> val in _data)
+            foreach (KeyValuePair<string, object> val in _data)
             {
                 _columns += $"{val.Key},";
             }
@@ -178,11 +196,11 @@ namespace SQLManager
             return _columns;
         }
 
-        private static string GetParametersKeys(Dictionary<string, string> _data)
+        private static string GetParametersKeys(Dictionary<string, object> _data)
         {
             string _paramKeys = string.Empty;
 
-            foreach (KeyValuePair<string, string> val in _data)
+            foreach (KeyValuePair<string, object> val in _data)
             {
                 _paramKeys += $"@{val.Key},";
             }
@@ -190,6 +208,18 @@ namespace SQLManager
             _paramKeys = _paramKeys.Substring(0, _paramKeys.Length - 1);
 
             return _paramKeys;
+        }
+
+        private static string[] GenerateWhereStatements(Dictionary<string, object> values)
+        {
+            List<string> where = new List<string>();
+
+            foreach (var v in values)
+            {
+                where.Add($"{v.Key} = @{v.Key}");
+            }
+
+            return where.ToArray();
         }
 
         private static void DisplayQueryOnConsole(string _query)
